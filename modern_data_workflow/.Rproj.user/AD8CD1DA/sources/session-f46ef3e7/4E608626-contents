@@ -1,0 +1,52 @@
+###############################################################################
+# Setting up the SQLite database in order to test the ContDataQC package
+# Loading RSQLite library
+library(RSQLite)
+library(lubridate)
+
+# Establishing database connection
+con <- dbConnect(SQLite(), dbname = 'historic_temperature.db')
+
+# This produces information about the table. The columns are cid (column id), name, 
+# type, notnull (1 if the column cannot be null e.g. the columns that compose the primary key are 1),
+# dflt_value (default value), and pk (primary key, 0 if not a part of a primary key and goes in ascending order for each part)
+SQL = 'PRAGMA table_info(temperature);'
+table_info = dbGetQuery(conn = con, SQL)
+
+# Showing all distinct years in ascending order
+SQL = 'SELECT DISTINCT strftime(\'%Y\', mDate) AS distinct_year FROM temperature ORDER BY distinct_year ASC;'
+distinct_years = dbGetQuery(conn = con, SQL)
+
+# Showing counts of entries for each year
+SQL = 'SELECT strftime(\'%Y\', mDate) AS distinct_year, COUNT(*) FROM temperature GROUP BY distinct_year;'
+counts_of_readings_by_year = dbGetQuery(conn = con, SQL)
+# Writing to a csv as a test
+write.csv(counts_of_readings_by_year, "test.csv")
+
+# Showing total count of entries
+SQL = 'SELECT COUNT(*) FROM temperature;'
+total_count = dbGetQuery(conn = con, SQL)
+
+# Showing all distinct parameters to ensure there is nothing but water quality data
+SQL = 'SELECT parameter AS distinct_parameter, COUNT(*) FROM temperature GROUP BY distinct_parameter;'
+distinct_parameters = dbGetQuery(conn = con, SQL)
+
+# Pulling up QA post deploy to see what it is
+SQL = 'SELECT * FROM temperature WHERE parameter == "QA post deploy";'
+post_deploy_rows = dbGetQuery(conn = con, SQL)
+
+# Pulling up NA parameters to see what they are
+SQL = 'SELECT * FROM temperature WHERE parameter IS NULL;'
+na_parameters = dbGetQuery(conn = con, SQL)
+
+# Showing all distinct uom to ensure there is nothing but degrees C
+SQL = 'SELECT uom AS distinct_uom, COUNT(*) FROM temperature GROUP BY distinct_uom;'
+distinct_uom = dbGetQuery(conn = con, SQL)
+
+# Pulling up unit uom to see what they are
+SQL = 'SELECT * FROM temperature WHERE uom == "unit";'
+unit_uom = dbGetQuery(conn = con, SQL)
+
+# Disconnect from the database
+dbDisconnect(con)
+###############################################################################

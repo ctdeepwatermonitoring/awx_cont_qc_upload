@@ -1,0 +1,16 @@
+Unresolved issue #1:
+Probe 280706 skips the leap year at site 15533 in 2004.
+It is unknown if it counted February 29 as March 1 or if it skipped February 29 altogether.
+This issue caused the time before and after February 29 to be separate deployments.
+Relevant files:
+-QC_280706_15533_Water_20031019_20040228.csv
+-QC_280706_15533_Water_20040301_20040308.csv
+
+
+Unresolved issue #2:
+Some temperature readings are outrageously high (some in mid 800 degrees, others well over 100).
+These may be easy to remove, but others are low enough that it is suspected they are in Fahrenheit.
+Examination of these values often shows switching to Fahrenheit and back to Celsius randomly if this is indeed the case.
+Further investigation needed.
+MySQL Query for 50 highest temperatures:
+-SELECT * FROM temperature ORDER BY temp DESC LIMIT 50;

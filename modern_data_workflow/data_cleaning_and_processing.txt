@@ -1,0 +1,176 @@
+Alexander Towle
+Alexander.Towle@ct.gov
+Last updated: 2026-03-16
+Documentation of Data Pipeline, Cleaning, and Processing
+
+
+
+Required packages for cleaning and processing:
+RSQLite
+tidyverse
+ContDataQC
+(all loaded automatically in csv_qc.R, but make sure the first 2 have been previously installed.)
+
+Not always required, but useful: Set GitHub credentials in the R environment using gitcreds::gitcreds_set()
+
+
+
+File structure required for this program:
+
+home
+└── ContDataQC                                        #https://github.com/ctdeepwatermonitoring/awx_cont_qc_upload
+    ├── modern_data_workflow
+    │   ├── csv_qc2.R
+    │   ├── migration_prep2.R
+    │   ├── config_deep2.R
+    │   ├── data_to_qc
+    │   ├── qced_data
+    │   ├── raw_data                                  #DEPLOYMENT CSVS GO HERE
+    │   ├── error_files
+    │   │   └── error_log
+    │   └── migration_folder
+    └── TemperatureDB
+        └── db
+            ├── cnf
+            │   └── user.cnf.txt
+            ├── testFTP
+            │   └── Upload
+            │       ├── ContData
+            │       ├── ErrRpts
+            │       └── UploadedRpts
+            │           └── Temperature
+            │               └── Error
+            └── db_app
+                ├── insert_temp_results.py
+                └── insert_temp_results_cross_platform.py
+
+
+
+Steps for QC of Modern Data (Documentation of csv_qc2.R)
+
+Step 1: Load ContDataQC
+The code used for this can be found in this GitHub repository: https://github.com/ctdeepwatermonitoring/water_temperature
+It can be installed with the code given in the file or it can be loaded from a local copy using devtools::load_all("/path/to/directory").
+
+Step 2: Initialize input and output directories
+Once initialized, all csv files are placed into a list and the total amount of files is found to show progress.
+
+Step 3: Correct any known common errors
+Certain errors in formatting are more common than others.
+These errors are usually due to misspellings or punctuation differences.
+Known errors are handled at this stage.
+ex.
+Any file using "ProbID" as a column name will be corrected to "ProbeID".
+
+Step 4: Arrange by Date_Time
+Some files may not have chronologically ordered data.
+The QC flags compare adjacent points in the csv for anomalies such as spikes.
+If data is not ordered chronologically then it is potentially comparing temperatures at radically different times of day or seasons.
+This produces high failure rates.
+To avoid this, files need to be put in chronological order before being written out.
+
+Step 5: Convert datetimes to proper format, add mDate and mTime
+Date, Time, and Datetime are needed to make the QC method work smoothly.
+Datetime usually starts in the format MM/DD/YY.
+This is unexpected by ContDataQC, so this file converts to YYYY-MM-DD.
+
+Step 6: Write out to subfolders
+Subfolders use the naming convention: probeID_staSeq_Water_startdeploymentDate_endDeploymentDate
+This uniquely identifies a deployment.
+ex.
+A folder containing the csv for the deployment of probe 824593 at site 14444 from Oct 13, 2010 to March 31, 2011 would be 824593_14444_Water_20101013_20110331
+File names use the naming convention: staSeq_Water_startDeploymentDate_endDeploymentDate.csv
+This is required for the QC method.
+ex.
+A csv for the deployment of probe 824593 at site 14444 from Oct 13, 2010 to March 31, 2011 would be 14444_Water_20101013_20110331.csv.
+The QC method requires this file name, so we need the subfolders to uniquely identify them.
+The subfolders also speed up runtime.
+The QC method scans every csv in a folder for a matching site and deployment from the file name, so by scanning the subfolder we drastically reduce runtime.
+
+Step 7: Read in recently written out data
+The QC method needs to read in csvs, hence why data is written out before being read again.
+Total files are also calculated.
+
+Step 8: Fill default values for deployments with less than 5 entries
+The QC method does not work if there are less than 5 records in a file.
+If this is the case, default values are assigned and data flags are assigned as "X".
+
+Step 9: Call QC method
+For deployments with 5 or more entries, ContDataQC is called with the QCRaw operation using the information parsed from the file name and the config file.
+Files with QC values and data for internal processing are written to the output directory.
+For the modern data, the config_deep2.R file must be used in the QC method call.
+The same subfolders that were used in creating the csvs are also created in the output directory to uniquely identify deployments.
+The QC method produces files with the naming convention: QC_staSeq_Water_startDeploymentDate_endDeploymentDate.csv
+ex.
+A QCed csv for the deployment of probe 824593 at site 14444 from Oct 13, 2010 to March 31, 2011 would be QC_14444_Water_20101013_20110331.csv.
+The QCed csvs will have the same columns as the inital csv in addition to several others, including QC flags and others needed for internal processing.
+ex.
+probeID staSeq  mDate       mTime       parameter           temp    uom         createDate  comment mDateTime           Month   Day Year    MonthDay    Flag.Gross.temp Flag.Spike.temp Flag.RoC.temp   Flag.Flat.temp  Flag.temp   RAW.mDateTime       Comment.MOD.mDateTime   RAW.probeID Comment.MOD.probeID RAW.staSeq  Comment.MOD.staSeq	RAW.mDate   Comment.MOD.mDate	RAW.mTime   Comment.MOD.mTime	RAW.parameter       Comment.MOD.parameter	RAW.temp    Comment.MOD.temp	RAW.uom Comment.MOD.uom	RAW.createDate  Comment.MOD.createDate	RAW.comment Comment.MOD.comment
+1298184	17701	2011-05-25	14:11:27	Water Temperature	20.198	Degrees C	2012-12-07	None	2011-05-25 14:11:27	5	    25	2011	525	        P	            F	            S	            P	            F           2011-05-25 14:11:27	                        1298184	                        17701	                        2011-05-25	                    14:11:27	                    Water Temperature	                        20.198	                        Degrees C	            2012-12-07	                            None
+
+Note: Any errors throughout this process will result in the offending file moved into the folder error_files.
+A log of the error will be created in the subfolder of error_files called error_log.
+Common errors are handled after reading the csv, but procedures may need to be adjusted as new data is acquired.
+
+
+
+Steps for QC EDA (Documentation of qc_eda.R)
+
+Step 1: Gather all QCed data
+The directory where the QCed data was put is initialized, and a list is made of all csv files in the subfolders.
+The deployment_id is reassigned, this time as the subfolder name.
+All data from the csvs are put into one dataframe called all_flagged_data.
+
+Step 2: Producing overall flag counts and percentages
+A table is produced that shows each of the four flag types (P - Pass, F - Fail, S - Suspect, X - No Data).
+It shows percentages and how many occurances there are of each flag type.
+
+Step 3: Breaking down flags by causes
+Overall flags are assigned based on four qualities, each given their own flag: flatline, spike, rate of change, and gross value.
+If any one of these fails, the overall flag fails.
+If none fail but any one of them is suspect, the overall flag is suspect.
+If none fail or are suspect, and at least one of them passes, the overall flag is pass.
+If there is no data for all of them, the overall flag is no data.
+A table is produced that totals up and gives percentages for all of the reasons that overall flags were assigned.
+Combined reasons are counted separately (ex. A point that failed both RoC and Spike is counted under the "RoC + Spike" bin rather than counting it twice in the "RoC" bin and the "Spike" bin).
+
+Step 4: Give individual deployments bins
+To gain a better idea of how many points are failing at certain sites, bins are created in 5% increments from 0%-100.
+Each deployment is summarised and sorted into these bins.
+ex.
+A deployment with 100 records where 4 fail and 32 are suspect falls into the 0%-5 fail bin and the 30%-5 suspect bin.
+
+Step 5: Get counts of failure and suspect bins
+The bins are summarised to show how many records fall into each bin.
+Deployments can be filtered by bin to find high failure or suspect sites.
+
+Step 6: Producing a visualization of flags for deployment
+Specifying a deployment_id can create a visualization of that deployment.
+It shows the records of water temperature over the course of the deployment.
+Points are color-coded with black for passing points, orange for suspect points, red for failing points, and gray for no data.
+
+
+
+Steps to prepare modern data for migration into the modern database (Documentation of migration_prep2.R)
+
+Step 1: Gather all csv files
+Input and output directories are specified.
+All csv files in the input directory are put into a list.
+
+Step 2: Loop through the data, modify, and write out a new csv
+Each file is read, then modified to the expected format.
+Some columns are renamed and some do not exist in the old data and are added in.
+Added columns: comment (set to "" by default).
+Renamed columns: Flag.temp -> dataFlag.
+Date_Time, Temp, UOM, ProbeID, SID, Collector, and ProbeType get carried over.
+Everything else gets left out.
+ex.
+Date_Time           Temp    UOM     ProbeID SID     Collector   ProbeType   dataFlag    comment
+2011-05-25 14:11:27 20.198  deg C   1298184	17701   ABM         HOBO	    P           None
+New csv files are placed in the output directory without subfolders and use the naming convention: QC_probeID_staSeq_Water_startDeploymentDate_endDeploymentDate.csv
+ex.
+A csv for the deployment of probe 824593 at site 14444 from Oct 13, 2010 to March 31, 2011 would be QC_824593_14444_Water_20101013_20110331.csv
+The files are written out and will use the insert_temp_results.py script to be taken into the database.
+
+Note: Any errors throughout this process will result in the offending file moved into the folder error_files.
+A log of the error will be created in the subfolder of error_files called error_log.

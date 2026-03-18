@@ -1,0 +1,12 @@
+control_data_qc_testing.R
+db_experimentation.R
+dup_csv.R
+duplicate_water_temp_readings.csv
+historic_temperature_data_query.R
+historic_temperature_project.Rproj
+test_example_csv.R
+water_control_data_qc_testing.R
+testing_csvs/
+testing_csvs_output/
+historic_temperature.db
+.Rdata

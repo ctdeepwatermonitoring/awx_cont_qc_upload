@@ -1,0 +1,36 @@
+# Loading RSQLite library
+library(RSQLite)
+library(lubridate)
+
+# Establishing database connection
+con <- dbConnect(SQLite(), dbname = 'historic_temperature.db')
+
+# Data cleaning
+SQL = 'SELECT * FROM temperature;'
+whole_db = dbGetQuery(conn = con, SQL)
+
+# Standardizing uom to Degrees C (Correcting cases. Also checked that anything
+# that says unit is meant to be Degrees C. They are.)
+standard_degrees <- whole_db
+standard_degrees$uom[standard_degrees$uom != "Degrees C"] <- "Degrees C"
+
+
+
+
+
+SQL = 'SELECT DISTINCT staSeq, strftime(\'%Y\', mDate) AS distinct_year FROM temperature;'
+unique_combos = dbGetQuery(conn = con, SQL)
+
+SQL = 'SELECT * FROM temperature WHERE staSeq == ? AND strftime(\'%Y\', mDate) == ?;'
+for (i in 1:nrow(unique_combos)) {
+  unique_site = unique_combos[i, "staSeq"]
+  unique_year = unique_combos[i, "distinct_year"]
+  data_by_site_year = dbGetQuery(conn = con, SQL, params = c(unique_site, unique_year))
+  data_by_site_year$mDateTime <- as.POSIXct(paste(data_by_site_year$mDate, data_by_site_year$mTime), format="%Y-%m-%d %I:%M:%S %p")
+  file_name = paste0(unique_site, "_Water_", unique_year, "0101_", unique_year, "1231.csv")
+  file_directory = paste0("/home/deepuser/Documents/historic_temperature_project/testing_csvs/", file_name)
+  write.csv(data_by_site_year, file_directory)
+  print(paste("Processed", i, "of", nrow(unique_combos), "files"))
+}
+
+dbDisconnect(con)
