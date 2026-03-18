@@ -1,0 +1,53 @@
+name: Cross-Platform QC Pipeline Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-qc:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || echo "No requirements.txt found"
+
+      - name: Create fake testFTP folder
+        run: |
+          mkdir -p cnf
+          echo "user,TowleA" > cnf/user.cnf.txt
+          echo "password,password" >> cnf/user.cnf.txt
+          mkdir -p testFTP/Upload/Cont_Data
+          mkdir -p testFTP/Upload/ErrRpts
+          mkdir -p testFTP/Upload/UploadedRpts/Temperature/Error
+          echo "Date_Time,Temp,UOM,ProbeID,SID,Collector,ProbeType,dataFlag,comment" > testFTP/Upload/Cont_Data/test1.csv
+          echo "2025-09-10 12:00:00,22.5,C,123,1,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test1.csv
+          echo "2025-09-10 13:00:00,hi,C,123,1,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test1.csv
+          echo "2025-09-10 14:00:00,23.1,C,123,1,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test1.csv
+          echo "Date_Time,Temp,UOM,ProbeID,SID,Collector,ProbeType,dataFlag,comment" > testFTP/Upload/Cont_Data/test2.csv
+          echo "2025-09-11 08:00:00,21.0,C,124,2,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test2.csv
+          echo "2025-09-11 09:00:00,21.5,C,124,2,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test2.csv
+          echo "2025-09-11 10:00:00,22.0,C,124,2,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test2.csv
+          echo "Date_Time,Temp,UOM,ProbeID,SID,Collector,ProbeType,dataFlag,comment" > testFTP/Upload/Cont_Data/test3.csv
+          echo "09/12/25 11:00:00,20.5,C,125,3,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test3.csv
+          echo "2025-09-12 12:00:00,21.0,C,125,3,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test3.csv
+          echo "2025-09-12 13:00:00,21.5,C,125,3,alex,HOBO,OK,none" >> testFTP/Upload/Cont_Data/test3.csv
+
+      - name: Run cross-platform script
+        run: python -m db.db_app.insert_temp_results_cross_platform
