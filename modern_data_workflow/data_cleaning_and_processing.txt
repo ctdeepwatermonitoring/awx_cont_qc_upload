@@ -41,8 +41,8 @@ home
             │           └── Temperature
             │               └── Error
             └── db_app
-                ├── insert_temp_results.py
-                └── insert_temp_results_cross_platform.py
+                ├── insert_temp_results_windows.py
+                └── insert_temp_results_linux.py
 
 
 
@@ -170,7 +170,7 @@ Date_Time           Temp    UOM     ProbeID SID     Collector   ProbeType   data
 New csv files are placed in the output directory without subfolders and use the naming convention: QC_probeID_staSeq_Water_startDeploymentDate_endDeploymentDate.csv
 ex.
 A csv for the deployment of probe 824593 at site 14444 from Oct 13, 2010 to March 31, 2011 would be QC_824593_14444_Water_20101013_20110331.csv
-The files are written out and will use the insert_temp_results.py script to be taken into the database.
+The files are written out and will use the insert_temp_results_windows.py or insert_temp_results_linux.py script to be taken into the database.
 
 Note: Any errors throughout this process will result in the offending file moved into the folder error_files.
 A log of the error will be created in the subfolder of error_files called error_log.
