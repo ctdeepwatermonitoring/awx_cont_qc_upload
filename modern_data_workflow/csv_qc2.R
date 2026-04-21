@@ -152,16 +152,23 @@ for (i in seq_along(all_csv_files)) {
     df_clean$Date_Time = format(df_clean$Date_Time, "%Y-%m-%d %H:%M:%S")
 
     staSeq = unique(df_clean$SID)
+    probeID = unique(df_clean$ProbeID)
     if (!staSeq %in% valid_sids$staSeq) {
       stop(sprintf("SID '%s' not found in stations table", staSeq))
     }
 
     filename_parts = strsplit(tools::file_path_sans_ext(basename(df_path)), "_")[[1]]
     staSeq_from_filename = as.integer(filename_parts[3])
+    probeID_from_filename = as.character(filename_parts[1])
 
     if (staSeq != staSeq_from_filename) {
       stop(sprintf("staSeq mismatch: file contains SID '%s' but filename indicates '%s'",
                    staSeq, staSeq_from_filename))
+    }
+
+    if (probeID != probeID_from_filename) {
+      stop(sprintf("probeID mismatch: file contains ProbeID '%s' but filename indicates '%s'",
+                   probeID, probeID_from_filename))
     }
 
     #Step 6: Write out to subfolders
