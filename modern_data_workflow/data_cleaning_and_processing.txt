@@ -1,15 +1,13 @@
 Alexander Towle
 Alexander.Towle@ct.gov
-Last updated: 2026-03-16
+Last updated: 2026-04-17
 Documentation of Data Pipeline, Cleaning, and Processing
 
 
 
 Required packages for cleaning and processing:
-RSQLite
-tidyverse
 ContDataQC
-(all loaded automatically in csv_qc.R, but make sure the first 2 have been previously installed.)
+(loaded automatically in csv_qc.R.)
 
 Not always required, but useful: Set GitHub credentials in the R environment using gitcreds::gitcreds_set()
 
@@ -18,7 +16,8 @@ Not always required, but useful: Set GitHub credentials in the R environment usi
 File structure required for this program:
 
 home
-└── ContDataQC                                        #https://github.com/ctdeepwatermonitoring/awx_cont_qc_upload
+└── ContDataQC                                        #https://github.com/ctdeepwatermonitoring/awx_cont_qc_upload   
+    ├── .env
     ├── modern_data_workflow
     │   ├── csv_qc2.R
     │   ├── migration_prep2.R
@@ -48,9 +47,12 @@ home
 
 Steps for QC of Modern Data (Documentation of csv_qc2.R)
 
-Step 1: Load ContDataQC
+Step 1: Load ContDataQC and MariaDB
 The code used for this can be found in this GitHub repository: https://github.com/ctdeepwatermonitoring/water_temperature
 It can be installed with the code given in the file or it can be loaded from a local copy using devtools::load_all("/path/to/directory").
+MariaDB is also connected to using the variables in the .env file.
+A .env.example file is included in this repository.
+Sit IDs are queried from the database for checks to ensure that site IDs exist and match the file name.
 
 Step 2: Initialize input and output directories
 Once initialized, all csv files are placed into a list and the total amount of files is found to show progress.
@@ -121,11 +123,18 @@ The directory where the QCed data was put is initialized, and a list is made of 
 The deployment_id is reassigned, this time as the subfolder name.
 All data from the csvs are put into one dataframe called all_flagged_data.
 
-Step 2: Producing overall flag counts and percentages
+Step 2: Calculating daily means
+Daily mean temperatures are calculated, including only days with at least 24 hours of data.
+Temperature categories are assigned as Cold, Cool, and Warm.
+
+Step 3: Calculating summer averages
+Data is filtered to summer months and summer means are determined from the data in step 2.
+
+Step 4: Producing overall flag counts and percentages
 A table is produced that shows each of the four flag types (P - Pass, F - Fail, S - Suspect, X - No Data).
 It shows percentages and how many occurances there are of each flag type.
 
-Step 3: Breaking down flags by causes
+Step 5: Breaking down flags by causes
 Overall flags are assigned based on four qualities, each given their own flag: flatline, spike, rate of change, and gross value.
 If any one of these fails, the overall flag fails.
 If none fail but any one of them is suspect, the overall flag is suspect.
@@ -134,20 +143,35 @@ If there is no data for all of them, the overall flag is no data.
 A table is produced that totals up and gives percentages for all of the reasons that overall flags were assigned.
 Combined reasons are counted separately (ex. A point that failed both RoC and Spike is counted under the "RoC + Spike" bin rather than counting it twice in the "RoC" bin and the "Spike" bin).
 
-Step 4: Give individual deployments bins
+Step 6: Give individual deployments bins
 To gain a better idea of how many points are failing at certain sites, bins are created in 5% increments from 0%-100.
 Each deployment is summarised and sorted into these bins.
 ex.
 A deployment with 100 records where 4 fail and 32 are suspect falls into the 0%-5 fail bin and the 30%-5 suspect bin.
 
-Step 5: Get counts of failure and suspect bins
+Step 7: Get counts of failure and suspect bins
 The bins are summarised to show how many records fall into each bin.
 Deployments can be filtered by bin to find high failure or suspect sites.
 
-Step 6: Producing a visualization of flags for deployment
+Step 8: Producing a visualization of flags for deployment
 Specifying a deployment_id can create a visualization of that deployment.
 It shows the records of water temperature over the course of the deployment.
 Points are color-coded with black for passing points, orange for suspect points, red for failing points, and gray for no data.
+
+
+
+Steps for QC EDA of a Specific Site (Documentation of qc_eda2.R)
+
+Step 1: Connect to MariaDB
+This script first connects to MariaDB using the credentials found in the .env file.
+
+Step 2: Specify a file name and send query
+A file name can be specified in fileName_vars.
+A query to gather all data belonging to this file name is sent to the database.
+
+Step 3: Produce visualization
+A scatterplot is created showing the temperature readings over time.
+The points are color coded based on their flag.
 
 
 
@@ -174,3 +198,33 @@ The files are written out and will use the insert_temp_results_windows.py or ins
 
 Note: Any errors throughout this process will result in the offending file moved into the folder error_files.
 A log of the error will be created in the subfolder of error_files called error_log.
+
+
+
+Steps for Getting Summaries by Querying the Database (Documentation of db_connect_summaries.R)
+
+Step 1: Connect to the cont and awqx databases
+Using the credentials in the .env file, both databases are connected to.
+staSeq_vars is a comma-separated list of site IDs of interest that can be entered by the user.
+The awqx database is queried to gather the staSeq and locationName from the sites in staSeq_vars.
+The cont database is queired to gather all temperature data from the list of sites.
+
+Step 2: Compute number of complete days
+Only days on sites with at least 24 hours of data are to be considered.
+Any day for a site with less is filtered out and not included in the count per site.
+
+Step 3: Calculate daily means
+The mean temperature id calculated for each site for each day.
+The number of complete days is merged in, site names are added, and thermal classifications are assigned.
+
+Step 4: Calculate summer data, July data, number of days, and max daily mean
+The daily_means are filtered to only summer months.
+The mean of them is taken for each site each year and thermal classifications are assigned.
+The complete number of days for the summer is calculated.
+The process is repeated for the month of July.
+The maximum daily mean is calculated for the summer months at each site for each year.
+This is also given a thermal classification.
+
+Step 5: Heatmap of thermal classifications
+A heatmap is created of the mean summer temperatures over the years using the thermal classifications for the specified sites.
+This serves as a timeline to determine how sites thermal classifications changed over the years.
