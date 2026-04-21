@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+db_connect_test.R
+modern_data_workflow/db_connect_test.R
+.env
