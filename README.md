@@ -19,7 +19,7 @@ Not always required, but useful: Set GitHub credentials in the R environment usi
 File structure required for this program:
 
 home\
-└── ContDataQC                                        #https://github.com/ctdeepwatermonitoring/awx_cont_qc_upload\
+└── ContDataQC                                        #https://github.com/ctdeepwatermonitoring/awx_cont_qc_upload \
 &emsp;&emsp;    ├── .env\
 &emsp;&emsp;    ├── modern_data_workflow\
 &emsp;&emsp;    │&emsp;   ├── csv_qc2.R\
