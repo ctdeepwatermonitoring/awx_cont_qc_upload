@@ -84,12 +84,12 @@ summer_avg$summer_category[summer_avg$summer_avg_temp >= 18.29 & summer_avg$summ
 summer_day_counts = aggregate(date_only ~ staSeq + year,
                                data = subset(daily_means, month %in% 6:8),
                                FUN = function(x) length(unique(as.Date(x, tz = "America/New_York"))))
-colnames(summer_day_counts)[colnames(summer_day_counts) == "date"] = "n_days_summer"
+colnames(summer_day_counts)[colnames(summer_day_counts) == "date_only"] = "n_days_summer"
 
 july_day_counts = aggregate(date_only ~ staSeq + year,
                               data = subset(daily_means, month == 7),
                               FUN = function(x) length(unique(as.Date(x, tz = "America/New_York"))))
-colnames(july_day_counts)[colnames(july_day_counts) == "date"] = "n_days_july"
+colnames(july_day_counts)[colnames(july_day_counts) == "date_only"] = "n_days_july"
 
 #Calculating July means
 july_data = subset(daily_means, month == 7)
