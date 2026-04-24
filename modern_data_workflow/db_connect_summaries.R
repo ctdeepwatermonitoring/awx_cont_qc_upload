@@ -39,7 +39,9 @@ result2 = dbSendQuery(mariadbconnection_cont, sprintf("SELECT * FROM temperature
 
 initial_data = dbFetch(result2, n = Inf)
 
-daily_counts = aggregate(temp ~ staSeq + as.Date(mDateTime),
+initial_data$mDateTime = as.POSIXct(format(initial_data$mDateTime, tz = "UTC"), tz = "America/New_York")
+
+daily_counts = aggregate(temp ~ staSeq + as.Date(mDateTime, tz = "America/New_York"),
                          data = initial_data, FUN = length)
 colnames(daily_counts) = c("staSeq", "date_only", "count")
 
@@ -50,15 +52,13 @@ dbDisconnect(mariadbconnection_cont)
 
 #Calculating daily means
 daily_means = initial_data
-daily_means$date = as.POSIXct(daily_means$mDateTime)
-daily_means$date_only = as.Date(daily_means$date, tz = "America/New_York")
-daily_means$year = strftime(daily_means$date, "%Y")
-daily_means$month = as.integer(strftime(daily_means$date, "%m"))
-daily_means$staSeq = as.character(daily_means$staSeq)
+daily_means$date_only = as.Date(daily_means$mDateTime, tz = "America/New_York")
+daily_means$year = strftime(daily_means$mDateTime, "%Y", tz = "America/New_York")
+daily_means$month = as.integer(strftime(daily_means$mDateTime, "%m", tz = "America/New_York"))
 daily_means = merge(daily_means, complete_days[, c("staSeq", "date_only")],
                     by = c("staSeq", "date_only"),
                     all = FALSE)
-daily_means = aggregate(temp ~ staSeq + date + year + month, data = daily_means,
+daily_means = aggregate(temp ~ staSeq + date_only + year + month, data = daily_means,
                         FUN = mean)
 colnames(daily_means)[colnames(daily_means) == "temp"] = "mean_temp"
 daily_means = merge(daily_means, sites_clean,
@@ -81,12 +81,12 @@ summer_avg$summer_category[summer_avg$summer_avg_temp > 21.70] = "Warm"
 summer_avg$summer_category[summer_avg$summer_avg_temp >= 18.29 & summer_avg$summer_avg_temp <= 21.70] = "Cool"
 
 #Calculating complete summer days
-summer_day_counts = aggregate(date ~ staSeq + year,
+summer_day_counts = aggregate(date_only ~ staSeq + year,
                                data = subset(daily_means, month %in% 6:8),
                                FUN = function(x) length(unique(as.Date(x, tz = "America/New_York"))))
 colnames(summer_day_counts)[colnames(summer_day_counts) == "date"] = "n_days_summer"
 
-july_day_counts = aggregate(date ~ staSeq + year,
+july_day_counts = aggregate(date_only ~ staSeq + year,
                               data = subset(daily_means, month == 7),
                               FUN = function(x) length(unique(as.Date(x, tz = "America/New_York"))))
 colnames(july_day_counts)[colnames(july_day_counts) == "date"] = "n_days_july"
