@@ -1,3 +1,9 @@
+#Go to directory
+#cd /home/deepuser/awx_cont_qc_upload/TemperatureDB
+#Run as a module
+#python3.12 -m db.db_app.insert_temp_results_linux
+#Make sure username and password are correct in cnf/user.cnf.txt or else you will have to re-enter it for every file uploaded
+
 import glob
 import platform
 from db import mysql_connector as msc
