@@ -24,7 +24,7 @@ mariadbconnection_awqx = dbConnect(RMariaDB::MariaDB(),
                                  user=Sys.getenv("DB_USER"),
                                  password=Sys.getenv("DB_PASSWORD"))
 
-staSeq_vars = c(14390)
+staSeq_vars = c(17300, 14390)
 
 result1 = dbSendQuery(mariadbconnection_awqx, sprintf("SELECT staSeq, locationName FROM stations WHERE staSeq IN (%s)",
                                                     paste(staSeq_vars, collapse = ", ")))
@@ -41,18 +41,22 @@ initial_data = dbFetch(result2, n = Inf)
 
 initial_data$mDateTime = as.POSIXct(format(initial_data$mDateTime, tz = "UTC"), tz = "America/New_York")
 
-daily_counts = aggregate(temp ~ staSeq + as.Date(mDateTime, tz = "America/New_York"),
-                         data = initial_data, FUN = length)
-colnames(daily_counts) = c("staSeq", "date_only", "count")
+initial_data$hour = format(initial_data$mDateTime, format = "%H")
 
-complete_days = daily_counts[daily_counts$count >= 24, ]
+initial_data$date_only = as.Date(initial_data$mDateTime, tz = "America/New_York")
+
+hourly_coverage = aggregate(hour ~ probeID + staSeq + date_only, data = initial_data, function(x) length(unique(x)))
+colnames(hourly_coverage)[colnames(hourly_coverage) == "hour"] = "n_hours"
+
+complete_probe_days = hourly_coverage[hourly_coverage$n_hours == 24, ]
+
+complete_days = unique(complete_probe_days[, c("staSeq", "date_only")])
 
 dbClearResult(result2)
 dbDisconnect(mariadbconnection_cont)
 
 #Calculating daily means
 daily_means = initial_data
-daily_means$date_only = as.Date(daily_means$mDateTime, tz = "America/New_York")
 daily_means$year = strftime(daily_means$mDateTime, "%Y", tz = "America/New_York")
 daily_means$month = as.integer(strftime(daily_means$mDateTime, "%m", tz = "America/New_York"))
 daily_means = merge(daily_means, complete_days[, c("staSeq", "date_only")],
