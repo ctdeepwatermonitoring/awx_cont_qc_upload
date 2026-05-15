@@ -17,7 +17,7 @@ mysqlconnection = dbConnect(RMariaDB::MariaDB(),
                             user=Sys.getenv("DB_USER"),
                             password=Sys.getenv("DB_PASSWORD"))
 
-fileName_vars = c("QC_20101086_19217_Water_20170522_20171012.csv")
+fileName_vars = c("QC_2238844_14740_Water_20150709_20150724.csv")
 
 quoted = paste(sprintf("'%s'", fileName_vars), collapse = ", ")
 

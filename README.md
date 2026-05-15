@@ -3,7 +3,7 @@ Workflow to clean, run QC checks, format and upload continuous data to cont sche
 
 Alexander Towle\
 Alexander.Towle@ct.gov\
-Last updated: 2026-04-17\
+Last updated: 2026-05-15\
 Documentation of Data Pipeline, Cleaning, and Processing
 
 
@@ -30,7 +30,9 @@ home\
 &emsp;&emsp;    │&emsp;   ├── raw_data                                  #DEPLOYMENT CSVS GO HERE\
 &emsp;&emsp;    │&emsp;   ├── error_files\
 &emsp;&emsp;    │&emsp;   │&emsp;   └── error_log\
-&emsp;&emsp;    │&emsp;   └── migration_folder\
+&emsp;&emsp;    │&emsp;   └── wqx_upload\
+&emsp;&emsp;    │&emsp;    &emsp;&emsp;   ├── upload_excel_files\
+&emsp;&emsp;    │&emsp;    &emsp;&emsp;   └── wqx_formatting.py\
 &emsp;&emsp;    └── TemperatureDB\
 &emsp;&emsp;&emsp;&emsp;        └── db\
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;            ├── cnf\
@@ -48,7 +50,7 @@ home\
 
 
 
-Steps for QC of Modern Data (Documentation of csv_qc2.R)
+## Steps for QC of Modern Data (Documentation of csv_qc2.R)
 
 Step 1: Load ContDataQC and MariaDB\
 The code used for this can be found in this GitHub repository: https://github.com/ctdeepwatermonitoring/water_temperature\
@@ -116,12 +118,9 @@ ex.
 
 Note: Any errors throughout this process will result in the offending file moved into the folder error_files.\
 A log of the error will be created in the subfolder of error_files called error_log.\
-Common errors are handled after reading the csv, but procedures may need to be adjusted as new data is acquired.\
-\
-\
-\
-\
-Steps for QC EDA (Documentation of qc_eda.R)
+Common errors are handled after reading the csv, but procedures may need to be adjusted as new data is acquired.
+
+## Steps for QC EDA (Documentation of qc_eda.R)
 
 Step 1: Gather all QCed data\
 The directory where the QCed data was put is initialized, and a list is made of all csv files in the subfolders.\
@@ -162,11 +161,8 @@ Step 8: Producing a visualization of flags for deployment\
 Specifying a deployment_id can create a visualization of that deployment.\
 It shows the records of water temperature over the course of the deployment.\
 Points are color-coded with black for passing points, orange for suspect points, red for failing points, and gray for no data.
-\
-\
-\
-\
-Steps for QC EDA of a Specific Site (Documentation of qc_eda2.R)
+
+## Steps for QC EDA of a Specific Site (Documentation of qc_eda2.R)
 
 Step 1: Connect to MariaDB\
 This script first connects to MariaDB using the credentials found in the .env file.
@@ -178,11 +174,8 @@ A query to gather all data belonging to this file name is sent to the database.
 Step 3: Produce visualization\
 A scatterplot is created showing the temperature readings over time.\
 The points are color coded based on their flag.
-\
-\
-\
-\
-Steps to prepare modern data for migration into the modern database (Documentation of migration_prep2.R)
+
+## Steps to prepare modern data for migration into the modern database (Documentation of migration_prep2.R)
 
 Step 1: Gather all csv files\
 Input and output directories are specified.\
@@ -207,11 +200,8 @@ The files are written out and will use the insert_temp_results_windows.py or ins
 
 Note: Any errors throughout this process will result in the offending file moved into the folder error_files.\
 A log of the error will be created in the subfolder of error_files called error_log.
-\
-\
-\
-\
-Steps for Getting Summaries by Querying the Database (Documentation of db_connect_summaries.R)
+
+## Steps for Getting Summaries by Querying the Database (Documentation of db_connect_summaries.R)
 
 Step 1: Connect to the cont and awqx databases\
 Using the credentials in the .env file, both databases are connected to.\
@@ -237,4 +227,79 @@ This is also given a thermal classification.
 
 Step 5: Heatmap of thermal classifications\
 A heatmap is created of the mean summer temperatures over the years using the thermal classifications for the specified sites.\
-This serves as a timeline to determine how sites thermal classifications changed over the years.
+This serves as a timeline to determine how sites thermal classifications changed over the years.\
+
+## Process for formatting data for upload to WQX (Documentation of wqx_formatting.py)
+
+To begin, change the directory to awx_cont_qc_upload/modern_data_workflow/wqx_upload.
+
+Install the requirements using pip install -r requirements.txt.
+
+Run the python script wqx_formatting.py.
+
+The script begins by loading the .env file located in awx_cont_qc_upload.
+
+The database is then connected to via mysql-connector.
+
+Once a connection is established, a query is made to pull every fileName from the database.\
+These fileNames are how we can specify unique deployments.
+
+The total files are counted and stored to track progress.
+
+Each fileName is iterated through and all data from the temperature table with the matching fileName is selected.\
+The data is placed into a dataframe with the following columns:\
+'probeID', 'staSeq', 'mDateTime', 'temp', 'uom', 'collector', 'probeType', 'fileName', 'dataFlag', 'comment', 'createDate', 'createUser', 'lastUpdateDate', 'lastUpdateUser'
+
+Unnecessary columns are dropped.\
+These include:\
+'probeType', 'createDate', 'createUser', 'lastUpdateDate', 'lastUpdateUser'
+
+The date from the mDateTime column is then extracted for grouping.
+
+Time intervals vary across probes, so we can't just filter for 24 readings per day.\
+If a probe reads in 15 minute intervals, it could have more than 24 readings and still not be a complete day.\
+Therefore we need to create a check that ensures that the probe has at least 24 readings in each day and also that the readings cover every hour of the day from 00:00 to 23:00.\
+To do this, we can create a pivot table called hourly_counts that counts the number of readings for each hour of the day for each probeID and staSeq, and then filter for groups that have at least 1 reading in each hour of the day and at least 24 readings in total.\
+The filtered data is stored as complete_hourly_counts.\
+A new dataframe is created called complete_days_results_df which is the result of an inner merge of temperature_results_df and complete_hourly_counts on probeID, staSeq, and date, thus filtering out incomplete days.
+
+If there are no complete days, the program will skip to the next file.
+
+The hour counts are then dropped from the dataframe as they are no longer needed.
+
+If the comment column is null it will be replaced with "None" as a null value will crash the program.
+
+complete_days_results_gf is then grouped by the 'probeID', 'staSeq', 'date', 'uom', 'collector', 'fileName', and 'comment' columns.\
+Each type of dataFlag value is counted and stored in flag_counts for each probeID for each staSeq for each day.
+
+Daily mean temperatures are then calculated from complete_day_results_df and stored in the dataframe daily_mean_temps.\
+flag_counts is merged in so that the counts of each flag type are available.
+
+daily_mean_temps has a new column created called 'ResultCommentText' which contains any comments present in the data as well as the totals of each dataFlag.
+
+wqx_upload_df is a dataframe that is created to store the values necessary for upload to WQX.\
+It contains the following columns:\
+'OrganizationID', 'ProjectID', 'ActivityType', 'ActivityMediaName', 'SampleCollectionEquipmentName', 'CharacteristicName', 'ResultUnit', 'ResultStatusID', 'StatisticalBaseCode', 'ResultValueType', 'ResultTimeBasis', 'ActivityID', 'ActivityStartDate', 'ActivityEndDate', 'MonitoringLocationID', 'ResultValue', 'ResultCommentText', 'AnalysisStartDate', 'AnalysisEndDate'
+
+'ResultValue' is filled in as the daily_mean_temps 'daily_mean_temp' column.\
+If the 'collector' column for daily_mean_temps is 'ABM', 'OrganizationID' will be filled in as 'CT_DEP01_WQX' and 'ProjectID' will be filled in as 'HOBOtemperature'.\
+If the 'collector' column for daily_mean_temps is 'VOL', 'OrganizationID' will be filled in as 'CTVOLMON' and 'ProjectID' will be filled in as 'CT-VOLMON-VSTEM'.\
+'ActivityType' is filled in as 'FieldMsr/Obs'.\
+'ActivityMediaName' is filled in as 'Water'.\
+'SampleCollectionEquipmentName' is filled in as 'Probe/Sensor'.\
+'CharacteristicName' is filled in as 'Temperature, water'.\
+'ResultUnit' is filled in as the daily_mean_temps 'uom' column.\
+'ResultStatusID' is filled in as 'Final'.\
+'StatisticalBaseCode' is filled in as 'Mean'.\
+'ResultValueType' is filled in as 'Calculated'.\
+'ResultTimeBasis' is filled in as '1 Day'.\
+'ActivityID' is filled out as the fileName minus the extension.\
+'ActivityStartDate' is filled out as the earliest date in the daily_mean_temps dataframe.\
+'ActivityEndDate' is filled out as the latest date in the daily_mean_temps dataframe.\
+'MonitoringLocationID' is filled out as the daily_mean_temps 'staSeq' column.\
+'ResultCommentText' is filled out as the daily_mean_temps 'ResultCommentText' column.\
+'AnalysisStartDate' is the date of the daily mean.\
+'AnalysisEndDate' is the date 1 day after 'AnalysisStartDate'.\
+All dates are in the format MM/DD/YYYY.
+
+The resulting wqx_upload_df is written out to an Excel file in the upload_excel_files folder.
