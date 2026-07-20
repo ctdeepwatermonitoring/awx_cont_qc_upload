@@ -246,6 +246,12 @@ These fileNames are how we can specify unique deployments.
 
 The total files are counted and stored to track progress.
 
+When uploading to WQX, the OrganizationID value from the first row will be taken to represent the whole dataset.
+Because of this, two lists (ctvolmon_list and ct_dep01_wqx_list) are created to store the dataframes for each collector.
+WQX also recommends file lengths of no more than 25000 rows.
+For this reason, the sum of the dataframe lengths in each list are tracked.
+Numbers for file naming starting at 0 are also tracked.
+
 Each fileName is iterated through and all data from the temperature table with the matching fileName is selected.\
 The data is placed into a dataframe with the following columns:\
 'probeID', 'staSeq', 'mDateTime', 'temp', 'uom', 'collector', 'probeType', 'fileName', 'dataFlag', 'comment', 'createDate', 'createUser', 'lastUpdateDate', 'lastUpdateUser'
@@ -302,4 +308,7 @@ If the 'collector' column for daily_mean_temps is 'VOL', 'OrganizationID' will b
 'AnalysisEndDate' is the date 1 day after 'AnalysisStartDate'.\
 All dates are in the format MM/DD/YYYY.
 
-The resulting wqx_upload_df is written out to an Excel file in the upload_excel_files folder.
+Depending on which OrganizationID wqx_upload_df uses, the dataframe will be appended to that OrganizationID's list, and the sum of the length of all dataframes in that list is updated.
+However, if appending the dataframe to the list would cause the sum of the dataframe lengths to exceed 25000, the current list of dataframes is concatenated and written out to an Excel file using the file number for naming.
+The file number is increased by 1, the list is reset to just wqx_upload_df, and the length tracker for that list is set to the length of wqx_upload_df.
+Upon the loop's conclusion, the final lists of dataframes for both OrganizationIDs are concatenated and written out to Excel files using the file numbers for naming.
