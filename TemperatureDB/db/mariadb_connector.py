@@ -77,7 +77,7 @@ class MariaDB:
             except RuntimeError:
                 print('start():ER3.ODBC')
                 self.errors+='start():ER3.ODBC'+'\n'
-            except mariadb.errors.ProgrammingError:
+            except mariadb.ProgrammingError:
                 print('start():ER4.Connection')
                 self.errors+='start():ER4.Connection'+'\n'
             except Exception as err:
@@ -95,7 +95,7 @@ class MariaDB:
             except RuntimeError:
                 print('start():ER3.ODBC')
                 self.errors += 'start():ER3.ODBC' + '\n'
-            except mariadb.errors.ProgrammingError:
+            except mariadb.ProgrammingError:
                 print('start():ER4.Connection')
                 self.errors += 'start():ER4.Connection' + '\n'
             except Exception as err:
@@ -122,14 +122,14 @@ class MariaDB:
             for i in range(len(self.SQL)):
                 cursor = self.conn.cursor(dictionary=True)
                 cursor.execute(self.SQL[i],self.V[i])
-                if cursor.with_rows: res += [cursor.fetchall()]
+                if cursor.description is not None: res += [cursor.fetchall()]
                 cursor.close()
             self.conn.commit()
-        except mariadb.errors.ProgrammingError as err1:
+        except mariadb.ProgrammingError as err1:
             print('run_SQL_V():ER6.SQL_Malformed Error: {}'.format(err1))
-        except mariadb.errors.DataError as err2:
+        except mariadb.DataError as err2:
             print('run_SQL_V():ER7.Data_Not_Matching_Template: {}'.format(err2))
-        except mariadb.errors.IntegrityError as err3:
+        except mariadb.IntegrityError as err3:
             print('run_SQL_V():ER8.SQL_Constraint_Violation: {}'.format(err3))
         except UnicodeDecodeError as err4:
             print('run_SQL_V():ER9.Unicode_Decoding_Error: {}'.format(err4))
@@ -144,18 +144,21 @@ class MariaDB:
         try:  # execute one sql and v
             cursor = self.conn.cursor(dictionary=True)
             cursor.execute(sql.replace(self.delim,'%s'),tuple(v))
-            if cursor.with_rows: res = cursor.fetchall()
+            if cursor.description is not None: res = cursor.fetchall()
             cursor.close()
-        except mariadb.errors.ProgrammingError as err1:
-            print(err1.sqlstate)
+        except mariadb.ProgrammingError as err1:
+            sqlstate = err1.args[2] if len(err1.args) >= 3 else "Unknown"
+            print(sqlstate)
             print('run_SQL_V():ER6.SQL_Malformed Error: {}'.format(err1))
             res['err1'] = str(err1)
-        except mariadb.errors.DataError as err2:
-            print(err2.sqlstate)
+        except mariadb.DataError as err2:
+            sqlstate = err2.args[2] if len(err2.args) >= 3 else "Unknown"
+            print(sqlstate)
             print('run_SQL_V():ER7.Data_Not_Matching_Template: {}'.format(err2))
             res['err2'] = str(err2)
-        except mariadb.errors.IntegrityError as err3:
-            print(err3.sqlstate)
+        except mariadb.IntegrityError as err3:
+            sqlstate = err3.args[2] if len(err3.args) >= 3 else "Unknown"
+            print(sqlstate)
             print('run_SQL_V():ER8.SQL_Constraint_Violation: {}'.format(err3))
             res['err3'] = str(err3)
         except UnicodeDecodeError as err4:
