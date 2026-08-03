@@ -1,5 +1,5 @@
 import glob
-from db import mysql_connector as msc
+from db import mariadb_connector as mdb
 from datetime import datetime
 import os
 import argparse
@@ -40,8 +40,8 @@ import pandas as pd
 
 ###FOR TESTING#####################################
 
-in_dir = 'C:\\Users\\deepuser\\Documents\\testFTP\\'  #Input directory
-cf_dir = 'C:\\Users\\deepuser\\Documents\\cnf\\user.cnf.txt' #Config file directory
+in_dir = 'C:\\Users\\deepuser\\Documents\\awx_cont_qc_upload\\TemperatureDB\\testFTP\\'  #Input directory
+cf_dir = 'C:\\Users\\deepuser\\Documents\\awx_cont_qc_upload\\TemperatureDB\\cnf\\user.cnf.txt' #Config file directory
 db_scm = 'cont' #Specify DB Schema
 
 ###################################################
@@ -106,19 +106,19 @@ config_pw = config[1][1]
 ftp = in_dir
 folder = 'Upload/'
 insert_type = 'Cont_Data/'
-fdir = glob.glob(ftp + '**/' + folder + insert_type + '**.csv')
+fdir = glob.glob(os.path.join(ftp, folder, insert_type, '*.csv'))
 # fdir = glob.glob(ftp + '**/' + folder + insert_type + '**.xlsx')
 
-headerList = ['Date_Time','Temp','UOM','ProbeID','SID','Collector','ProbeType']
+headerList = ['Date_Time','Temp','UOM','ProbeID','SID','Collector','ProbeType','dataFlag','comment']
 
 # headerList = ['Date Time', 'Temp, °C', 'UOM', 'Probe ID', 'SID', 'Collector', 'Probe Type']
 
 
 SQLinsert = 'INSERT INTO ' + db_scm + '.temperature' \
-            '(mDateTime, temp, uom, probeID, staSeq, collector, probeType, fileName,' \
+            '(mDateTime, temp, uom, probeID, staSeq, collector, probeType, dataFlag, comment, fileName,' \
             'createDate, createUser, lastUpdateDate, lastUpdateUser) ' \
-            'VALUES (?,?,?,?,?,?,?,?,?,?,?,?);'
-SQLerrLog = 'INSERT INTO ' + db_scm + '.errlog VALUES (?,?,?,?,?,?,?);'
+            'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+SQLerrLog = 'INSERT INTO ' + db_scm + '.errlog VALUES (?,?,?,?,?,?,?,?,?);'
 
 print('found %s files to process: %s' % (len(fdir), fdir))
 
@@ -129,16 +129,16 @@ try:
         uploadDate = datetime.today().strftime('%m%d%Y_%H%M%S_')
         fpath_base = file.rsplit('\\', 3)[0]
         fpath_in = file
-        fpath_err = fpath_base + '\\ErrRpts\\' + uploadDate + file.rsplit('\\')[-1] + 'QcRpt.txt'
-        fpath_out = fpath_base + '\\UploadedRpts\\Temperature\\' + uploadDate + file.rsplit('\\')[-1]
-        fpath_eout = fpath_base + '\\UploadedRpts\\Temperature\\Error\\' + file.rsplit('\\')[-1]
+        fpath_err = fpath_base + '\\testFTP\\Upload\\ErrRpts\\' + uploadDate + file.rsplit('\\')[-1] + 'QcRpt.txt'
+        fpath_out = fpath_base + '\\testFTP\\Upload\\UploadedRpts\\Temperature\\' + uploadDate + file.rsplit('\\')[-1]
+        fpath_eout = fpath_base + '\\testFTP\\Upload\\UploadedRpts\\Temperature\\Error\\' + file.rsplit('\\')[-1]
         delim = '\t'
         raw = read_file(fpath_in, db_err)
         header = raw[0]  # could use to check header names in the excel file
         raw = raw[1:]
 
         if raw is not None and header == headerList:
-            with msc.MYSQL('localhost', db_scm, 3306, config_uid, config_pw) as dbo:
+            with mdb.MariaDB('localhost', db_scm, 3306, config_uid, config_pw) as dbo:
                 insDate = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
                 # Insert into the database line by line.  Append DB error if not caught by qc checks.
                 for i in range(len(raw)):
