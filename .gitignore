@@ -39,4 +39,4 @@ TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/*
 !TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error
 TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/*
 !TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/.gitkeep
-cnf/user.cnf.txt
+TemperatureDB/cnf/user.cnf.txt
