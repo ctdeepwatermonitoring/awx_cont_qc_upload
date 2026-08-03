@@ -38,4 +38,5 @@ TemperatureDB/testFTP/Upload/ErrRpts/*
 TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/*
 !TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error
 TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/*
-!TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/.gitkeep-
+!TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/.gitkeep
+cnf/user.cnf.txt
