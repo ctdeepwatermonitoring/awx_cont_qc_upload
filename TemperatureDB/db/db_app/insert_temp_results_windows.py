@@ -40,8 +40,8 @@ import pandas as pd
 
 ###FOR TESTING#####################################
 
-in_dir = 'C:\\Users\\deepuser\\Documents\\awx_cont_qc_upload\\TemperatureDB\\testFTP\\'  #Input directory
-cf_dir = 'C:\\Users\\deepuser\\Documents\\awx_cont_qc_upload\\TemperatureDB\\cnf\\user.cnf.txt' #Config file directory
+in_dir = 'E:\\Documents\\awx_cont_qc_upload\\TemperatureDB\\testFTP\\'  #Input directory
+cf_dir = 'E:\\Documents\\awx_cont_qc_upload\\TemperatureDB\\cnf\\user.cnf.txt' #Config file directory
 db_scm = 'cont' #Specify DB Schema
 
 ###################################################
