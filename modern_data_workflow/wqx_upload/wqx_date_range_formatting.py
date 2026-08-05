@@ -26,8 +26,17 @@ try:
     #cursor
     cursor = connection.cursor()
 
-    #Select all unique fileName values from the temperature table, fetch and store in a dataframe
-    cursor.execute("SELECT DISTINCT fileName FROM temperature")
+    #Select all unique fileName values within the specified date rangefrom the temperature table, fetch and store in a dataframe
+    start_upload_date = "2026-07-31 00:00:00"
+    end_upload_date = "2026-08-03 23:59:59"
+    start_results_date = "2026-07-31 00:00:00"
+    end_results_date = "2026-08-03 23:59:59"
+    # Set this variable to "upload" to query off the createDate column, or set it to "results" to query off the mDateTime column
+    upload_or_results = "upload"
+    if upload_or_results == "upload":
+        cursor.execute("SELECT DISTINCT fileName FROM temperature WHERE createDate BETWEEN %s AND %s", (start_upload_date, end_upload_date))
+    else:
+        cursor.execute("SELECT DISTINCT fileName FROM temperature WHERE mDateTime BETWEEN %s AND %s", (start_results_date, end_results_date))
     fileName_results = cursor.fetchall()
     fileName_results_df = pd.DataFrame(fileName_results, columns=['fileName'])
     total_files = len(fileName_results_df)

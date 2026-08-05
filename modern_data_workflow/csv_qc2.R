@@ -32,7 +32,7 @@ remotes::install_github("tsangyp/StreamThermal",
 require("ContDataQC")
 library(RMariaDB)
 library(dotenv)
-load_dot_env("/home/deepuser/awx_cont_qc_upload/.env")
+load_dot_env("C:/Users/deepuser/Documents/awx_cont_qc_upload/.env")
 ###############################################################################
 
 mariadbconnection_awqx = dbConnect(RMariaDB::MariaDB(),
@@ -46,11 +46,11 @@ valid_sids = dbGetQuery(mariadbconnection_awqx, "SELECT staSeq FROM stations")
 dbDisconnect(mariadbconnection_awqx)
 
 #Step 2: Initialize input and output directories
-input_main_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/raw_data"
-rename_main_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/data_to_qc"
-output_main_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/qced_data"
-error_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/error_files"
-error_log = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/error_files/error_log"
+input_main_directory = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/raw_data"
+rename_main_directory = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/data_to_qc"
+output_main_directory = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/qced_data"
+error_directory = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/error_files"
+error_log = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/error_files/error_log"
 script_name = "csv_qc2.R"
 
 #List of all csv files
@@ -283,7 +283,7 @@ for (i in seq_along(qc_prep_files)) {
       dir.create(myDir.export, showWarnings = TRUE, recursive = TRUE)
 
       myReport.format = "html"
-      myConfig = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/config_deep2.R"
+      myConfig = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/config_deep2.R"
 
       ContDataQC::ContDataQC(myData.Operation,
                              myData.SiteID,

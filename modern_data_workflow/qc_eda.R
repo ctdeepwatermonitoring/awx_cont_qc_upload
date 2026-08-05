@@ -1,4 +1,4 @@
-flags_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/qced_data"
+flags_directory = "C:/Users/deepuser/Documents/awx_cont_qc_upload/modern_data_workflow/qced_data"
 
 all_flagged_csv_files = list.files(
   path = flags_directory,
@@ -197,7 +197,7 @@ high_failure_deployments = deployment_summary[
 ]
 
 #Producing a visualization of flags for a deployment
-target_deployment = "22030694_20925_Water_20240917_20250429"
+target_deployment = "21082372_20925_Water_20250917_20260428"
 
 deployment_data = all_flagged_data[all_flagged_data$deployment_id == target_deployment, ]
 
@@ -211,7 +211,7 @@ plot(
   pch = 16,
   cex = 0.6,
   xlab = "Date-Time",
-  ylab = "Temperature (Â°C)",
+  ylab = "Temperature (°C)",
   main = paste("Temperature Readings for Site", deployment_data$SID[1],
                "by Probe", deployment_data$ProbeID[1])
 )
@@ -222,3 +222,4 @@ legend(
   col    = c("red", "orange", "black", "gray"),
   pch    = 16
 )
+
