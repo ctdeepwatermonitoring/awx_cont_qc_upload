@@ -211,7 +211,7 @@ plot(
   pch = 16,
   cex = 0.6,
   xlab = "Date-Time",
-  ylab = "Temperature (°C)",
+  ylab = "Temperature (ï¿½C)",
   main = paste("Temperature Readings for Site", deployment_data$SID[1],
                "by Probe", deployment_data$ProbeID[1])
 )
