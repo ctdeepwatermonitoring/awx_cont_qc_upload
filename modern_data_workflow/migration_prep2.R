@@ -1,9 +1,9 @@
 #Step 1: Gather all csv files
 #Directories
-old_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/qced_data"
-new_directory = "/home/deepuser/awx_cont_qc_upload/TemperatureDB/testFTP/Upload/Cont_Data"
-error_directory = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/error_files"
-error_log = "/home/deepuser/awx_cont_qc_upload/modern_data_workflow/error_files/error_log"
+old_directory = "E:/Documents/awx_cont_qc_upload/modern_data_workflow/qced_data"
+new_directory = "E:/Documents/awx_cont_qc_upload/TemperatureDB/testFTP/Upload/Cont_Data"
+error_directory = "E:/Documents/awx_cont_qc_upload/modern_data_workflow/error_files"
+error_log = "E:/Documents/awx_cont_qc_upload/modern_data_workflow/error_files/error_log"
 script_name = "migration_prep2.R"
 
 #Check if directory exists and if not, create one
