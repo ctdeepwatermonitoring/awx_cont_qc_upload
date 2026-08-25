@@ -40,3 +40,5 @@ TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/*
 TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/*
 !TemperatureDB/testFTP/Upload/UploadedRpts/Temperature/Error/.gitkeep
 TemperatureDB/cnf/user.cnf.txt
+"*.pyc"
+"__pycache__/" 
